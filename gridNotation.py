@@ -9,10 +9,10 @@ def defaultColor():
 
 def refreshHoverColor(square_dict):
 	# At the begining of every cycle, we need to remove all the previous hover colors
-	# thus if any of the values is 2, we make it one.
+	# thus if any of the values is 3, we make it one.
 	# This function is called at the begining of the application loop
 	for square in square_dict.keys():
-		if square_dict[square] == 2:
+		if square_dict[square] == 3:
 			square_dict[square] = 1
 	return square_dict
 
