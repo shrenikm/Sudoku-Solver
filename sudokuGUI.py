@@ -16,8 +16,9 @@ GRID_BASE = (190,190,190)
 GRID_BASE_SHADE_HIGH = (100,100,100)
 GRID_BASE_SHADE_MED = (150,150,150)
 SQUARE_DEFAULT = (255,217,92)
-SQUARE_HOVER = (89,181,36)
-SQUARE_FILLED = (252, 179, 43)
+SQUARE_FILLED = (89,181,36)
+SQUARE_HOVER = (252, 179, 43)
+OPTIONS_TEXT = (30,50,40)
 
 # mouse coordinates
 mousex = mousey = -1
@@ -41,6 +42,8 @@ square_rect = dict([(square, pygame.Rect(square_pos[square][0], square_pos[squar
 
 
 mouseCollideSquare = False
+mouseClickSquare = False
+drawOptionsMenu = False
 
 
 
@@ -54,8 +57,10 @@ def calcSquareColor():
 			square_color[square] = SQUARE_DEFAULT # pale yellow
 		elif square_color_number[square] == 2:
 			square_color[square] = SQUARE_FILLED # green
-		else:
+		elif square_color_number[square] == 3:
 			square_color[square] = SQUARE_HOVER # orange
+		else:
+			pass
 
 
 
@@ -65,6 +70,12 @@ def calcSquareColor():
 size = [700, 600]
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Sudoku Solver")
+
+pygame.init()
+
+# font initialization
+options_font = pygame.font.SysFont("comicsansms", 16)
+options_text = [options_font.render(str(i), True, OPTIONS_TEXT) for i in xrange(1,10)]
 
 app_done = False # variable to stop the application loop
 clock = pygame.time.Clock() # managing screen update time
@@ -80,6 +91,9 @@ def main_draw(screen):
 	screen.fill(APP_BACKGROUND)
 	draw_grid(screen)
 	draw_square_color(screen)
+	if drawOptionsMenu:
+		# draw options
+		draw_options(screen)
 
 # Draws the sudoku grid
 def draw_grid(screen):
@@ -131,6 +145,11 @@ def draw_square_color(screen):
 	for square in square_notation:
 		pygame.draw.rect(screen, square_color[square], square_pos[square])
 
+# draw number options
+def draw_options(screen):
+	for i in xrange(9):
+		screen.blit(options_text[i], (620, 100+40*i))
+
 
 
 
@@ -143,14 +162,23 @@ while not app_done:
 
 	# refreshing hover color fill
 	square_color_number = gn.refreshHoverColor(square_color_number)
+
+	# Resetting values
 	mouseCollideSquare = False
+	mouseClickSquare = False
+
+	# mouse position
+	mousex, mousey = pygame.mouse.get_pos()
 
 	# Event processing --------------------------------------------------------------
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			app_done = True # Quits the app on the next iteration
-		elif event.type == pygame.MOUSEMOTION:
-			mousex, mousey = event.pos
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			mousex, mousey = pygame.mouse.get_pos()
+			mouseClickSquare = True
+			drawOptionsMenu = True
+
 
 
 
@@ -160,9 +188,17 @@ while not app_done:
 	# check if the mouse coordinates collides with the squares
 	for square in square_rect:
 		if square_rect[square].collidepoint(mousex, mousey):
-			square_color_number[square] = 2
+			if square_color_number[square]!=2: # to prevent overwriting filled green
+				square_color_number[square] = 3
 			mouseCollideSquare = True
 			break
+	if mouseClickSquare:
+		for square in square_rect:
+			if square_rect[square].collidepoint(mousex, mousey):
+				square_color_number[square] = 2
+				print "check"
+				break
+
 
 
 
