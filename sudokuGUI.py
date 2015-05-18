@@ -16,14 +16,16 @@ GRID_BASE = (190,190,190)
 GRID_BASE_SHADE_HIGH = (100,100,100)
 GRID_BASE_SHADE_MED = (150,150,150)
 SQUARE_DEFAULT = (255,217,92)
+SQUARE_DEFAULT_DARKER = (255,240,150)
 SQUARE_FILLED = (89,181,36)
 SQUARE_HOVER = (252, 179, 43)
 OPTIONS_TEXT = (30,50,40)
 OPTIONS_CIRCLE = (124,162,252)
+NUMBER = (10,20,30)
+SOLVE_BUTTON = (227,84,84)
 
 # mouse coordinates
 mousex = mousey = -1
-
 
 
 
@@ -41,6 +43,9 @@ square_pos = gn.squarePos()
 # dictionary that stores all user entered numbers
 square_user_values = dict([(sq, 0) for sq in square_notation])
 
+# dictionary that stores the pygame string representations of square_user_values
+square_user_values_text = {}
+
 # dictionary of rectangles. pygame.Rect(x,y,w,h)
 square_rect = dict([(square, pygame.Rect(square_pos[square][0], square_pos[square][1], 45, 45)) for square in square_pos])
 # The rectangle for the whole grid
@@ -49,6 +54,8 @@ grid_rect = pygame.Rect(135, 50, 431, 431)
 number_selected = -1
 # stores the last selected square
 last_selected_square = ''
+# for dual color
+dualBaseColor = 1
 
 
 
@@ -64,6 +71,7 @@ selectDrawOptions = False
 # Game functions-------------------------------------------------------------------
 def calcSquareColor():
 	# Makes a dictionary with colors for the squares using square_color_number
+	global square_notation
 	for square in square_notation:
 		if square_color_number[square] == 1:
 			square_color[square] = SQUARE_DEFAULT # pale yellow
@@ -71,23 +79,57 @@ def calcSquareColor():
 			square_color[square] = SQUARE_FILLED # green
 		elif square_color_number[square] == 3:
 			square_color[square] = SQUARE_HOVER # orange
+		elif square_color_number[square] == 4:
+			square_color[square] = SQUARE_DEFAULT_DARKER
 		else:
 			pass
 
 # function that checks if the mouse hovers over any of the options
 def optionHover():
-	ishovering = False
 	global number_selected
-	for i in xrange(9):
+	ishovering = False
+	for i in xrange(10):
 
 		# using equation of circle
-		dst = ((mousex-625.0)**2 + (mousey-(87+45*i))**2)**0.5
+		dst = ((mousex-625.0)**2 + (mousey-(65+45*i))**2)**0.5
 		if dst<=20:
 			number_selected = i
 			ishovering = True
 			break
 	if not ishovering:
 		number_selected = -1
+
+# Makes the square_user_values to a set of pygame texts to blit
+def makeNumberText():
+	global square_notation
+	global square_user_values
+	global square_user_values_text
+	for square in square_notation:
+		# If it is a zero, keep the dict value as 0
+		# else convert to text
+		if square_user_values[square] == 0:
+			square_user_values_text[square] = 0
+		else:
+			square_user_values_text[square] = number_font.render(str(square_user_values[square]), True, NUMBER)
+
+# set proper dual color
+def setDualColor():
+	global square_notation
+	for square in square_notation:
+		x = square[0]
+		y = square[1]
+		if x in 'ABC' and y in '456':
+			square_color_number[last_selected_square] = 1
+		elif x in 'DEF' and y in '123':
+			square_color_number[last_selected_square] = 1
+		elif x in 'DEF' and y in '789':
+			square_color_number[last_selected_square] = 1
+		elif x in 'GHI' and y in '456':
+			square_color_number[last_selected_square] = 1
+		else:
+			square_color_number[last_selected_square] = 4
+
+
 
 
 
@@ -103,7 +145,12 @@ pygame.init()
 
 # font initialization
 options_font = pygame.font.SysFont("comicsansms", 16)
-options_text = [options_font.render(str(i), True, OPTIONS_TEXT) for i in xrange(1,10)]
+options_text = [options_font.render(str(i), True, OPTIONS_TEXT) for i in xrange(0,10)]
+number_font = pygame.font.SysFont("comicsansms", 18)
+# font for the buttons
+button_font = pygame.font.SysFont("Arial", 24)
+Solve_text = button_font.render("SOLVE", True, WHITE)
+number_text = {}
 
 app_done = False # variable to stop the application loop
 clock = pygame.time.Clock() # managing screen update time
@@ -122,6 +169,8 @@ def main_draw(screen):
 	if drawOptionsMenu:
 		# draw options
 		draw_options(screen)
+	draw_user_numbers(screen)
+	draw_buttons(screen)
 
 # Draws the sudoku grid
 def draw_grid(screen):
@@ -144,24 +193,14 @@ def draw_grid(screen):
 	pygame.draw.rect(screen, GRID_BASE_SHADE_MED, [135, 478, 431, 1]) # bot med shade
 
 	# Inner column grids
-	pygame.draw.rect(screen, GRID_BASE, [185,55,2,422])
-	pygame.draw.rect(screen, GRID_BASE, [232,55,2,422])
-	pygame.draw.rect(screen, GRID_BASE, [279,55,2,422])
-	pygame.draw.rect(screen, GRID_BASE, [326,55,2,422])
-	pygame.draw.rect(screen, GRID_BASE, [373,55,2,422])
-	pygame.draw.rect(screen, GRID_BASE, [420,55,2,422])
-	pygame.draw.rect(screen, GRID_BASE, [467,55,2,422])
-	pygame.draw.rect(screen, GRID_BASE, [514,55,2,422])
+	for i in xrange(9):
+		pygame.draw.rect(screen, GRID_BASE, [185+i*47,55,2,422])
+	
 
 	# Inner row grids
-	pygame.draw.rect(screen, GRID_BASE, [140,100,422,2])
-	pygame.draw.rect(screen, GRID_BASE, [140,147,422,2])
-	pygame.draw.rect(screen, GRID_BASE, [140,194,422,2])
-	pygame.draw.rect(screen, GRID_BASE, [140,241,422,2])
-	pygame.draw.rect(screen, GRID_BASE, [140,288,422,2])
-	pygame.draw.rect(screen, GRID_BASE, [140,335,422,2])
-	pygame.draw.rect(screen, GRID_BASE, [140,382,422,2])
-	pygame.draw.rect(screen, GRID_BASE, [140,429,422,2])
+	for i in xrange(9):
+		pygame.draw.rect(screen, GRID_BASE, [140,100+i*47,422,2])
+
 
 # Colors the squares
 def draw_square_color(screen):
@@ -169,18 +208,40 @@ def draw_square_color(screen):
 	# filling the squares with coordinates using square_pos and colors depending on 
 	# square_color
 	# calculate colors
+	global square_notation
 	calcSquareColor()
 	for square in square_notation:
 		pygame.draw.rect(screen, square_color[square], square_pos[square])
 
 # draw number options
 def draw_options(screen):
+	global number_selected
 	if number_selected!=-1:
 		# The cursor hovers over a number
-		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 87+45*number_selected), 20)
-	for i in xrange(9):
-		screen.blit(options_text[i], (620, 75+45*i))
-		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 87+45*i), 20, 1 )
+		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 65+45*number_selected), 20)
+	for i in xrange(10):
+		screen.blit(options_text[i], (620, 53+45*i))
+		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 65+45*i), 20, 1 )
+
+# draws the user entered numbers on the grid		
+def draw_user_numbers(screen):
+	makeNumberText()
+	global square_notation
+	global square_user_values_text
+	global square_user_values
+	for square in square_notation:
+		#finding position based on the notation value
+		xpos = int(square[1])-1
+		ypos = ord(square[0])-ord('A')
+		if square_user_values[square]!=0:
+			screen.blit(square_user_values_text[square], (155+xpos*47, 65+ypos*47))
+
+def draw_buttons(screen):
+	# draw the solve button
+	pygame.draw.rect(screen, SOLVE_BUTTON, (288, 510, 125, 50))
+	pygame.draw.rect(screen, SOLVE_BUTTON, (138, 510, 125, 50))
+	pygame.draw.rect(screen, SOLVE_BUTTON, (438, 510, 125, 50))
+
 
 
 
@@ -193,7 +254,7 @@ def draw_options(screen):
 while not app_done:
 
 	# refreshing hover color fill
-	square_color_number = gn.refreshHoverColor(square_color_number)
+	square_color_number = gn.refreshHoverColor(square_color_number, dualBaseColor)
 
 	# Resetting values
 	mouseCollideSquare = False
@@ -222,6 +283,7 @@ while not app_done:
 		for square in square_rect:
 			if square_rect[square].collidepoint(mousex, mousey):
 				if square_color_number[square]!=2: # to prevent overwriting filled green
+					dualBaseColor = square_color_number[square] # to get the proper refreshed colors for dual base colors
 					square_color_number[square] = 3
 				mouseCollideSquare = True
 				break
@@ -241,11 +303,16 @@ while not app_done:
 		if not grid_rect.collidepoint(mousex, mousey):
 			if number_selected == -1:
 				drawOptionsMenu = False
-				square_color_number[last_selected_square] = 1
+				setDualColor()
 			else:
 				# put the number that the user selected to the grid
-				square_user_values[last_selected_square] = number_selected+1
+				square_user_values[last_selected_square] = number_selected
 				drawOptionsMenu = False
+				# if 0 is selected. Clear the green square
+				# The user can input 0 to clear
+				if number_selected == 0:
+					setDualColor()
+
 
 
 
