@@ -3,17 +3,35 @@ def defaultColor():
 	# A value of 1 means default color - pale yellow
 	# A value of 2 means number entered color - green
 	# A value of 3 means mouse hover color - orange
+	# A value of 4 means a darker yellow - for color separation of 3*3 units
 
 	# This function gives everything a value of 1 by default
-	return dict([(square, 1) for square in notation_list])
+	coldict = {}
+	for square in notation_list:
+		x = square[0]
+		y = square[1]
+		if x in 'ABC' and y in '456':
+			coldict[square] = 1
+		elif x in 'DEF' and y in '123':
+			coldict[square] = 1
+		elif x in 'DEF' and y in '789':
+			coldict[square] = 1
+		elif x in 'GHI' and y in '456':
+			coldict[square] = 1
+		else:
+			coldict[square] = 4
+	return coldict
 
-def refreshHoverColor(square_dict):
+
+
+
+def refreshHoverColor(square_dict,i):
 	# At the begining of every cycle, we need to remove all the previous hover colors
 	# thus if any of the values is 3, we make it one.
 	# This function is called at the begining of the application loop
 	for square in square_dict.keys():
 		if square_dict[square] == 3:
-			square_dict[square] = 1
+			square_dict[square] = i
 	return square_dict
 
 def calcPos(st):
