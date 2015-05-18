@@ -19,6 +19,7 @@ SQUARE_DEFAULT = (255,217,92)
 SQUARE_FILLED = (89,181,36)
 SQUARE_HOVER = (252, 179, 43)
 OPTIONS_TEXT = (30,50,40)
+OPTIONS_CIRCLE = (124,162,252)
 
 # mouse coordinates
 mousex = mousey = -1
@@ -37,13 +38,24 @@ square_color = {}
 # dictionary for the position values of each square. In the form of [x,y,w,h]
 square_pos = gn.squarePos()
 
+# dictionary that stores all user entered numbers
+square_user_values = dict([(sq, 0) for sq in square_notation])
+
 # dictionary of rectangles. pygame.Rect(x,y,w,h)
 square_rect = dict([(square, pygame.Rect(square_pos[square][0], square_pos[square][1], 45, 45)) for square in square_pos])
+# The rectangle for the whole grid
+grid_rect = pygame.Rect(135, 50, 431, 431)
+# store the number that was selected in the options
+number_selected = -1
+# stores the last selected square
+last_selected_square = ''
+
 
 
 mouseCollideSquare = False
-mouseClickSquare = False
+mouseClick = False
 drawOptionsMenu = False
+selectDrawOptions = False
 
 
 
@@ -61,6 +73,22 @@ def calcSquareColor():
 			square_color[square] = SQUARE_HOVER # orange
 		else:
 			pass
+
+# function that checks if the mouse hovers over any of the options
+def optionHover():
+	ishovering = False
+	global number_selected
+	for i in xrange(9):
+
+		# using equation of circle
+		dst = ((mousex-625.0)**2 + (mousey-(87+45*i))**2)**0.5
+		if dst<=20:
+			number_selected = i
+			ishovering = True
+			break
+	if not ishovering:
+		number_selected = -1
+
 
 
 
@@ -147,8 +175,12 @@ def draw_square_color(screen):
 
 # draw number options
 def draw_options(screen):
+	if number_selected!=-1:
+		# The cursor hovers over a number
+		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 87+45*number_selected), 20)
 	for i in xrange(9):
-		screen.blit(options_text[i], (620, 100+40*i))
+		screen.blit(options_text[i], (620, 75+45*i))
+		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 87+45*i), 20, 1 )
 
 
 
@@ -165,7 +197,7 @@ while not app_done:
 
 	# Resetting values
 	mouseCollideSquare = False
-	mouseClickSquare = False
+	mouseClick = False
 
 	# mouse position
 	mousex, mousey = pygame.mouse.get_pos()
@@ -176,8 +208,8 @@ while not app_done:
 			app_done = True # Quits the app on the next iteration
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			mousex, mousey = pygame.mouse.get_pos()
-			mouseClickSquare = True
-			drawOptionsMenu = True
+			mouseClick = True
+			
 
 
 
@@ -186,18 +218,35 @@ while not app_done:
 	# Game logic --------------------------------------------------------------------
 	
 	# check if the mouse coordinates collides with the squares
-	for square in square_rect:
-		if square_rect[square].collidepoint(mousex, mousey):
-			if square_color_number[square]!=2: # to prevent overwriting filled green
-				square_color_number[square] = 3
-			mouseCollideSquare = True
-			break
-	if mouseClickSquare:
+	if not drawOptionsMenu: # freeze if number options is drawn
 		for square in square_rect:
 			if square_rect[square].collidepoint(mousex, mousey):
-				square_color_number[square] = 2
-				print "check"
+				if square_color_number[square]!=2: # to prevent overwriting filled green
+					square_color_number[square] = 3
+				mouseCollideSquare = True
 				break
+	if not drawOptionsMenu: # dont allow selection unless the options menu is gone
+		if mouseClick:
+			for square in square_rect:
+				if square_rect[square].collidepoint(mousex, mousey):
+					square_color_number[square] = 2
+					last_selected_square = square
+					drawOptionsMenu = True
+					break
+	if drawOptionsMenu: # menu is drawn
+		optionHover()
+		# print number_selected
+	# If there was a mouse click outside the grid, then remove the options menu
+	if mouseClick:
+		if not grid_rect.collidepoint(mousex, mousey):
+			if number_selected == -1:
+				drawOptionsMenu = False
+				square_color_number[last_selected_square] = 1
+			else:
+				# put the number that the user selected to the grid
+				square_user_values[last_selected_square] = number_selected+1
+				drawOptionsMenu = False
+
 
 
 
