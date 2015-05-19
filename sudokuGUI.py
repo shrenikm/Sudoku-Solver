@@ -54,8 +54,7 @@ grid_rect = pygame.Rect(135, 50, 431, 431)
 number_selected = -1
 # stores the last selected square
 last_selected_square = ''
-# for dual color
-dualBaseColor = 1
+
 
 
 
@@ -72,6 +71,8 @@ selectDrawOptions = False
 def calcSquareColor():
 	# Makes a dictionary with colors for the squares using square_color_number
 	global square_notation
+	global square_color_number
+	global square_color
 	for square in square_notation:
 		if square_color_number[square] == 1:
 			square_color[square] = SQUARE_DEFAULT # pale yellow
@@ -80,7 +81,7 @@ def calcSquareColor():
 		elif square_color_number[square] == 3:
 			square_color[square] = SQUARE_HOVER # orange
 		elif square_color_number[square] == 4:
-			square_color[square] = SQUARE_DEFAULT_DARKER
+			square_color[square] = SQUARE_DEFAULT_DARKER # dual base color
 		else:
 			pass
 
@@ -115,6 +116,7 @@ def makeNumberText():
 # set proper dual color
 def setDualColor():
 	global square_notation
+	global square_color_number
 	for square in square_notation:
 		x = square[0]
 		y = square[1]
@@ -128,6 +130,22 @@ def setDualColor():
 			square_color_number[last_selected_square] = 1
 		else:
 			square_color_number[last_selected_square] = 4
+
+# set dual color for a single square
+def setDualColorSquare(sq):
+	x = sq[0]
+	y = sq[1]
+	if x in 'ABC' and y in '456':
+		square_color_number[sq] = 1
+	elif x in 'DEF' and y in '123':
+		square_color_number[sq] = 1
+	elif x in 'DEF' and y in '789':
+		square_color_number[sq] = 1
+	elif x in 'GHI' and y in '456':
+		square_color_number[sq] = 1
+	else:
+		square_color_number[sq] = 4
+
 
 
 
@@ -254,7 +272,7 @@ def draw_buttons(screen):
 while not app_done:
 
 	# refreshing hover color fill
-	square_color_number = gn.refreshHoverColor(square_color_number, dualBaseColor)
+	square_color_number = gn.refreshHoverColor(square_color_number)
 
 	# Resetting values
 	mouseCollideSquare = False
@@ -268,7 +286,6 @@ while not app_done:
 		if event.type == pygame.QUIT:
 			app_done = True # Quits the app on the next iteration
 		if event.type == pygame.MOUSEBUTTONDOWN:
-			mousex, mousey = pygame.mouse.get_pos()
 			mouseClick = True
 			
 
@@ -283,10 +300,10 @@ while not app_done:
 		for square in square_rect:
 			if square_rect[square].collidepoint(mousex, mousey):
 				if square_color_number[square]!=2: # to prevent overwriting filled green
-					dualBaseColor = square_color_number[square] # to get the proper refreshed colors for dual base colors
 					square_color_number[square] = 3
 				mouseCollideSquare = True
-				break
+				break # because the mouse can hover over only one square at a time
+
 	if not drawOptionsMenu: # dont allow selection unless the options menu is gone
 		if mouseClick:
 			for square in square_rect:
@@ -303,7 +320,8 @@ while not app_done:
 		if not grid_rect.collidepoint(mousex, mousey):
 			if number_selected == -1:
 				drawOptionsMenu = False
-				setDualColor()
+				setDualColorSquare(last_selected_square)
+				
 			else:
 				# put the number that the user selected to the grid
 				square_user_values[last_selected_square] = number_selected
@@ -311,7 +329,7 @@ while not app_done:
 				# if 0 is selected. Clear the green square
 				# The user can input 0 to clear
 				if number_selected == 0:
-					setDualColor()
+					setDualColorSquare(last_selected_square)
 
 
 
@@ -322,6 +340,7 @@ while not app_done:
 	main_draw(screen)
 	pygame.display.flip()
 	clock.tick(60)
+
 
 pygame.quit()
 
