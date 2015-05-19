@@ -25,13 +25,31 @@ def defaultColor():
 
 
 
-def refreshHoverColor(square_dict,i):
+def refreshHoverColor(square_dict):
 	# At the begining of every cycle, we need to remove all the previous hover colors
-	# thus if any of the values is 3, we make it one.
+	# thus if any of the values is 3, we make it the previous base dual color.
 	# This function is called at the begining of the application loop
+	# we need to check the position of the square to give it one of the dual colors
+
 	for square in square_dict.keys():
-		if square_dict[square] == 3:
-			square_dict[square] = i
+		x = square[0]
+		y = square[1]
+		if x in 'ABC' and y in '456':
+			if square_dict[square] == 3:
+				square_dict[square] = 1
+		elif x in 'DEF' and y in '123':
+			if square_dict[square] == 3:
+				square_dict[square] = 1
+		elif x in 'DEF' and y in '789':
+			if square_dict[square] == 3:
+				square_dict[square] = 1
+		elif x in 'GHI' and y in '456':
+			if square_dict[square] == 3:
+				square_dict[square] = 1
+		else:
+			if square_dict[square] == 3:
+				square_dict[square] = 4
+
 	return square_dict
 
 def calcPos(st):
