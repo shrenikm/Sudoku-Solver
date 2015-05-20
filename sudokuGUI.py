@@ -1,6 +1,8 @@
 import pygame
 import os
-import gridNotation as gn
+import sudokuGridNotation as gn
+import sudokuAlgo as alg 
+import sudokuConv as conv 
 
 # Centering the window -------------------------------------------------------------
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -22,7 +24,9 @@ SQUARE_HOVER = (252, 179, 43)
 OPTIONS_TEXT = (30,50,40)
 OPTIONS_CIRCLE = (124,162,252)
 NUMBER = (10,20,30)
-SOLVE_BUTTON = (227,84,84)
+BUTTON = (227,84,84)
+BUTTON_CLICK = (255, 20, 20)
+NUMBER_SOLUTION = (200,50,20)
 
 # mouse coordinates
 mousex = mousey = -1
@@ -32,8 +36,10 @@ mousex = mousey = -1
 # application variables ------------------------------------------------------------
 # dictionary for list of square notations
 square_notation = gn.notation_list
+
 # dictionary for colors for the squares
 square_color_number = gn.defaultColor() # gives default color to all squares
+
 # dictionary for actual colors
 square_color = {}
 
@@ -46,12 +52,30 @@ square_user_values = dict([(sq, 0) for sq in square_notation])
 # dictionary that stores the pygame string representations of square_user_values
 square_user_values_text = {}
 
+# dictionary that stores the solution
+square_solution_values = {}
+
+# dictionary that stores the pygame string representations of square_solution_values
+square_solution_values_text = {}
+
 # dictionary of rectangles. pygame.Rect(x,y,w,h)
 square_rect = dict([(square, pygame.Rect(square_pos[square][0], square_pos[square][1], 45, 45)) for square in square_pos])
+
 # The rectangle for the whole grid
 grid_rect = pygame.Rect(135, 50, 431, 431)
-# store the number that was selected in the options
+
+# Rectangles for the 3 buttons
+# These represent 3 buttons
+# The solve button solves the Sudoku and displays the result
+# The reset button resets the current sudoku, retaining the user entered values
+# The clear button clears the whole sudoku.
+solve_rect = pygame.Rect(288, 510, 125, 50)
+reset_rect = pygame.Rect(138, 510, 125, 50)
+clear_rect = pygame.Rect(438, 510, 125, 50)
+
+# stores the current number selected in the options menu
 number_selected = -1
+
 # stores the last selected square
 last_selected_square = ''
 
@@ -62,12 +86,43 @@ mouseCollideSquare = False
 mouseClick = False
 drawOptionsMenu = False
 selectDrawOptions = False
+# to set when solve button is clicked
+solveGrid = False 
+# Print error message if solution is wrong
+error_print = False
+
+# checking for button hover
+solveClick = False
+clearClick = False
+resetClick = False
 
 
 
 
 
 # Game functions-------------------------------------------------------------------
+
+# Initialize everything to default, for clearing, etc.
+def initClear():
+	global square_notation
+	global square_user_values
+	global square_user_values_text
+	global square_solution_values
+	global square_solution_values_text
+	global square_color_number
+	square_user_values = dict([sq, 0] for sq in square_notation)
+	square_user_values_text = {}
+	square_solution_values = {}
+	square_solution_values_text = {}
+	square_color_number = gn.defaultColor()
+
+def initReset():
+	global square_solution_values
+	global square_solution_values_text
+	square_solution_values = {}
+	square_solution_values_text = {}
+
+
 def calcSquareColor():
 	# Makes a dictionary with colors for the squares using square_color_number
 	global square_notation
@@ -113,6 +168,15 @@ def makeNumberText():
 		else:
 			square_user_values_text[square] = number_font.render(str(square_user_values[square]), True, NUMBER)
 
+# Converts the solution dictionary to a pygame text dictionary
+def makeNumberSolutionText():
+	global square_notation
+	global square_solution_values
+	global square_solution_values_text
+	for square in square_notation:
+		square_solution_values_text[square] = number_font.render(str(square_solution_values[square]), True, NUMBER_SOLUTION)
+
+
 # set proper dual color
 def setDualColor():
 	global square_notation
@@ -146,6 +210,21 @@ def setDualColorSquare(sq):
 	else:
 		square_color_number[sq] = 4
 
+# checks if the user entered values are empty
+def isUserValuesEmpty():
+	global square_user_values
+	global square_notation
+	c = 0 # count for zeroes
+
+	for square in square_notation:
+		if square_user_values[square] == 0:
+			c+=1
+	if c==81:
+		return True # user has not entered anything
+	else:
+		return False
+
+
 
 
 
@@ -163,11 +242,15 @@ pygame.init()
 
 # font initialization
 options_font = pygame.font.SysFont("comicsansms", 16)
-options_text = [options_font.render(str(i), True, OPTIONS_TEXT) for i in xrange(0,10)]
 number_font = pygame.font.SysFont("comicsansms", 18)
-# font for the buttons
-button_font = pygame.font.SysFont("Arial", 24)
-Solve_text = button_font.render("SOLVE", True, WHITE)
+button_font = pygame.font.SysFont("courier", 28, 1)
+
+# text creation using the fonts
+options_text = [options_font.render(str(i), True, OPTIONS_TEXT) for i in xrange(0,10)]
+solve_text = button_font.render("SOLVE", True, WHITE)
+reset_text = button_font.render("RESET", True, WHITE)
+clear_text = button_font.render("CLEAR", True, WHITE)
+
 number_text = {}
 
 app_done = False # variable to stop the application loop
@@ -189,6 +272,12 @@ def main_draw(screen):
 		draw_options(screen)
 	draw_user_numbers(screen)
 	draw_buttons(screen)
+	# if solve is clicked, display the solution
+	if solveGrid:
+		draw_solution(screen)
+	# print error message if invalid user values
+	if error_print:
+		draw_error(screen)
 
 # Draws the sudoku grid
 def draw_grid(screen):
@@ -255,10 +344,45 @@ def draw_user_numbers(screen):
 			screen.blit(square_user_values_text[square], (155+xpos*47, 65+ypos*47))
 
 def draw_buttons(screen):
-	# draw the solve button
-	pygame.draw.rect(screen, SOLVE_BUTTON, (288, 510, 125, 50))
-	pygame.draw.rect(screen, SOLVE_BUTTON, (138, 510, 125, 50))
-	pygame.draw.rect(screen, SOLVE_BUTTON, (438, 510, 125, 50))
+	# draw the solve, reset and clear buttons
+	pygame.draw.rect(screen, BUTTON, (288, 510, 125, 50))
+	pygame.draw.rect(screen, BUTTON, (138, 510, 125, 50))
+	pygame.draw.rect(screen, BUTTON, (438, 510, 125, 50))
+	if solveClick:
+		pygame.draw.rect(screen, BUTTON_CLICK, (288, 510, 125, 50))
+	if resetClick:
+		pygame.draw.rect(screen, BUTTON_CLICK, (138, 510, 125, 50))
+	if clearClick:
+		pygame.draw.rect(screen, BUTTON_CLICK, (438, 510, 125, 50))
+
+
+
+
+	# draw the text in the buttons
+	screen.blit(solve_text, (307, 517))
+	screen.blit(reset_text, (157, 517))
+	screen.blit(clear_text, (457, 517))
+
+def draw_solution(screen):
+	makeNumberSolutionText()
+	global square_notation
+	global square_solution_values
+	global square_solution_values_text
+	for square in square_notation:
+		xpos = int(square[1])-1
+		ypos = ord(square[0])-ord('A')
+		screen.blit(square_solution_values_text[square], (155+xpos*47, 65+ypos*47))
+	# we call this function to overwrite
+	# All the numbers are in red
+	# but to keep the original in black, we overwrite it again
+	draw_user_numbers(screen)
+
+# write error message
+def draw_error(screen):
+	txt = button_font.render("INVALID VALUES", True, NUMBER_SOLUTION)
+	screen.blit(txt, (235,10))
+
+
 
 
 
@@ -287,49 +411,90 @@ while not app_done:
 			app_done = True # Quits the app on the next iteration
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			mouseClick = True
+			error_print = False
+		if event.type == pygame.MOUSEBUTTONUP:
+			# if button is clicked and released, restore original color
+			if solve_rect.collidepoint(mousex, mousey):
+				solveClick = False
+			if reset_rect.collidepoint(mousex, mousey):
+				resetClick = False
+			if clear_rect.collidepoint(mousex, mousey):
+				clearClick = False
 			
 
 
 
 
-
-	# Game logic --------------------------------------------------------------------
-	
-	# check if the mouse coordinates collides with the squares
-	if not drawOptionsMenu: # freeze if number options is drawn
-		for square in square_rect:
-			if square_rect[square].collidepoint(mousex, mousey):
-				if square_color_number[square]!=2: # to prevent overwriting filled green
-					square_color_number[square] = 3
-				mouseCollideSquare = True
-				break # because the mouse can hover over only one square at a time
-
-	if not drawOptionsMenu: # dont allow selection unless the options menu is gone
-		if mouseClick:
+	# If solve is clicked, freeze screen
+	if not solveGrid:
+		# Game logic --------------------------------------------------------------------
+		
+		# check if the mouse coordinates collides with the squares
+		if not drawOptionsMenu: # freeze if number options is drawn
 			for square in square_rect:
 				if square_rect[square].collidepoint(mousex, mousey):
-					square_color_number[square] = 2
-					last_selected_square = square
-					drawOptionsMenu = True
-					break
-	if drawOptionsMenu: # menu is drawn
-		optionHover()
-		# print number_selected
-	# If there was a mouse click outside the grid, then remove the options menu
-	if mouseClick:
-		if not grid_rect.collidepoint(mousex, mousey):
-			if number_selected == -1:
-				drawOptionsMenu = False
-				setDualColorSquare(last_selected_square)
-				
-			else:
-				# put the number that the user selected to the grid
-				square_user_values[last_selected_square] = number_selected
-				drawOptionsMenu = False
-				# if 0 is selected. Clear the green square
-				# The user can input 0 to clear
-				if number_selected == 0:
+					if square_color_number[square]!=2: # to prevent overwriting filled green
+						square_color_number[square] = 3
+						# reset button color change
+					mouseCollideSquare = True
+					break # because the mouse can hover over only one square at a time
+
+		if not drawOptionsMenu: # dont allow selection unless the options menu is gone
+			if mouseClick:
+				for square in square_rect:
+					if square_rect[square].collidepoint(mousex, mousey):
+						square_color_number[square] = 2
+						last_selected_square = square
+						drawOptionsMenu = True
+						break
+		if drawOptionsMenu: # menu is drawn
+			optionHover()
+			# print number_selected
+		# If there was a mouse click outside the grid, then remove the options menu
+		if mouseClick:
+			if not grid_rect.collidepoint(mousex, mousey) and not solve_rect.collidepoint(mousex, mousey) and not clear_rect.collidepoint(mousex, mousey) and not reset_rect.collidepoint(mousex, mousey):
+				if number_selected == -1:
+					drawOptionsMenu = False
 					setDualColorSquare(last_selected_square)
+					# we need to make sure to remove the number if the user clicks away
+					# without selecting a number.
+					# this case is for when the user comes back to square to remove the 
+					# number
+					square_user_values[last_selected_square] = 0
+					
+				else:
+					# put the number that the user selected to the grid
+					square_user_values[last_selected_square] = number_selected
+					drawOptionsMenu = False
+					# if 0 is selected. Clear the green square
+					# The user can input 0 to clear
+					if number_selected == 0:
+						setDualColorSquare(last_selected_square)
+	if mouseClick:
+		# If the solve button is clicked
+		if solve_rect.collidepoint(mousex, mousey):
+			square_solution_values = alg.solve(conv.convToString(square_user_values))
+			# square_solution_values stores False if the user entered solution is invalid
+			solveClick = True
+			if square_solution_values == False or isUserValuesEmpty() :
+				error_print = True
+			else:
+				solveGrid = True
+		# If the clear button is clicked
+		if clear_rect.collidepoint(mousex, mousey):
+			# clears the screen
+			clearClick = True
+			solveGrid = False
+			initClear()
+
+		# If the reset is clicked, it removes all the computed solutions
+		if reset_rect.collidepoint(mousex, mousey):
+			resetClick = True
+			solveGrid = False
+			initReset()
+	if not grid_rect.collidepoint(mousex, mousey) and not solve_rect.collidepoint(mousex, mousey) and not clear_rect.collidepoint(mousex, mousey) and not reset_rect.collidepoint(mousex, mousey):
+		solveClick = resetClick = clearClick = False # to reset button click color
+
 
 
 
