@@ -1,5 +1,5 @@
-def cross(A, B):
-	return [a+b for a in A for b in B]
+def cross(row, col):
+	return [r+c for r in row for c in col]
 
 
 def parse_grid(grid):
@@ -86,7 +86,7 @@ def some(seq):
 
 cols = '123456789'
 rows = 'ABCDEFGHI'
-digits = '123456789'
+digits = cols
 
 squares = cross(rows, cols)
 
@@ -96,7 +96,7 @@ units = dict((s, [u for u in unit_list if s in u]) for s in squares)
 	
 peers = dict((s, set(sum(units[s], [])) - set([s])) for s in squares)
 
-# solved_grid = solve('4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......')
+solved_grid = solve('4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......')
 # display(solved_grid)
 
 
