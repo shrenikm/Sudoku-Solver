@@ -1,3 +1,14 @@
+# THIS PROGRAM CONTAINS CODE THAT SOLVES THE SUDOKU
+# IT USES A CONSTRICTIVE ALGORITHM, TOGETHER WITH A CONTAINED BRUTE FORCE
+# APPROACH TOWARDS THE END (TO SOLVE HARDER PUZZLES)
+
+# IT DOES NOT CONTAIN ANY GUI CODE
+
+# THE INPUT TO THE MAIN FUNCTION THAT DRIVES THE SOLVER IS A STRING THAT 
+# CONTAINS EACH ELEMENT OF THE INPUT PUZZLE
+
+
+# We return the combinations of the notations (like A1, B1, etc.)
 def cross(row, col):
 	return [r+c for r in row for c in col]
 
@@ -29,7 +40,7 @@ def assign(values, s, d):
 		return False
 
 def eliminate(values, s, d):
-	# eliminate d from values[s]. Propagate when values or places <=2.
+	# eliminate d from values[s]. Propagate when values or places less than equal to 2
 	# return values. Return false if a contradiciton is detected
 	if d not in values[s]:
 		return values # already eliminated
@@ -45,7 +56,8 @@ def eliminate(values, s, d):
 	for u in units[s]:
 		dplaces = [s for s in u if d in values[s]]
 		if len(dplaces)==0:
-			return False # contradiction
+			# contradiction
+			return False 
 		elif len(dplaces)==1:
 			# d can only be in one place
 			if not assign(values, dplaces[0], d):
@@ -61,16 +73,13 @@ def display(values):
 		if r in 'CF':
 			print line
 
-def solve(grid):
-	 return search(parse_grid(grid))
-
 def search(values):
     "Using depth-first search and propagation, try all possible values."
     if values is False:
-        return False ## Failed earlier
+        return False # Failed earlier
     if all(len(values[s]) == 1 for s in squares): 
-        return values ## Solved!
-    ## Chose the unfilled square s with the fewest possibilities
+        return values # Solved!
+    # Chose the unfilled square s with the fewest possibilities
     n,s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
     return some(search(assign(values.copy(), s, d)) 
 		for d in values[s])
@@ -82,21 +91,26 @@ def some(seq):
     return False
 
 
+# The main function that takes the grid input
+def solve(grid):
+	 return search(parse_grid(grid))
+
 
 
 cols = '123456789'
 rows = 'ABCDEFGHI'
 digits = cols
 
+# Squares are each of the 81 squares in the grid
 squares = cross(rows, cols)
 
+# Units of a square are a 3*3 box or a row or a column that contain all numbers from 1 to 9
 unit_list = ([cross(rows, c) for c in cols] + [cross(r, cols) for r in rows] + [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')])
 
 units = dict((s, [u for u in unit_list if s in u]) for s in squares)
-	
+
+# Peers of any element are all the elements contained in all the units of a square
 peers = dict((s, set(sum(units[s], [])) - set([s])) for s in squares)
 
-solved_grid = solve('4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......')
-# display(solved_grid)
 
 
