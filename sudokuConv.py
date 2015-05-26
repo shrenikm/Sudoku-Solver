@@ -1,7 +1,7 @@
-# A function that accepts a dictionary of the notation values
-# This dictionary is converted to a string format
-# This is done because the sudokuAlgo program is able to calculate the sudoku solution
-# only if the input 
+# A FUNCTION THAT ACCEPTS A DICTIONARY OF THE NOTATION VALUES
+# THIS DICTIONARY IS CONVERTED TO A STRING FORMAT
+# THIS IS DONE BECAUSE THE SUDOKUALGO PROGRAM IS ABLE TO CALCULATE THE SUDOKU SOLUTION
+# ONLY IF THE INPUT 
 def convToString(grid):
 	# grid is the input dictionary
 	global notation_list
