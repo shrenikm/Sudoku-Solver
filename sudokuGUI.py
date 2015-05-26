@@ -1,3 +1,6 @@
+# THIS IS THE CORE GUI CODE. IT TAKES CARE OF THE GRID DISPLAY AND FILLING
+# IT DOES NOT INVOLVE CODE TO SOLVE THE SUDOKU
+
 import pygame
 import os
 import sudokuGridNotation as gn
@@ -508,4 +511,3 @@ while not app_done:
 
 
 pygame.quit()
-

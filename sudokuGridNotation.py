@@ -1,3 +1,7 @@
+# A MODULE TO WORK WITH THE GRIDS.
+# IT PERFORMS NECESSARY GRID CALCULATIONS AND ALSO HAS FUNCTIONS TO HELP IN 
+# GRID NOTATIONS
+
 def defaultColor():
 	# takes the notation and makes a dictionary out of it.
 	# A value of 1 means default color - pale yellow
