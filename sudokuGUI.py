@@ -147,7 +147,7 @@ def calcSquareColor():
 def optionHover():
 	global number_selected
 	ishovering = False
-	for i in xrange(10):
+	for i in range(10):
 
 		# using equation of circle
 		dst = ((mousex-625.0)**2 + (mousey-(65+45*i))**2)**0.5
@@ -249,7 +249,7 @@ number_font = pygame.font.SysFont("comicsansms", 18)
 button_font = pygame.font.SysFont("courier", 28, 1)
 
 # text creation using the fonts
-options_text = [options_font.render(str(i), True, OPTIONS_TEXT) for i in xrange(0,10)]
+options_text = [options_font.render(str(i), True, OPTIONS_TEXT) for i in range(0,10)]
 solve_text = button_font.render("SOLVE", True, WHITE)
 reset_text = button_font.render("RESET", True, WHITE)
 clear_text = button_font.render("CLEAR", True, WHITE)
@@ -303,12 +303,12 @@ def draw_grid(screen):
 	pygame.draw.rect(screen, GRID_BASE_SHADE_MED, [135, 478, 431, 1]) # bot med shade
 
 	# Inner column grids
-	for i in xrange(9):
+	for i in range(9):
 		pygame.draw.rect(screen, GRID_BASE, [185+i*47,55,2,422])
 	
 
 	# Inner row grids
-	for i in xrange(9):
+	for i in range(9):
 		pygame.draw.rect(screen, GRID_BASE, [140,100+i*47,422,2])
 
 
@@ -329,7 +329,7 @@ def draw_options(screen):
 	if number_selected!=-1:
 		# The cursor hovers over a number
 		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 65+45*number_selected), 20)
-	for i in xrange(10):
+	for i in range(10):
 		screen.blit(options_text[i], (620, 53+45*i))
 		pygame.draw.circle(screen, OPTIONS_CIRCLE, (625, 65+45*i), 20, 1 )
 
